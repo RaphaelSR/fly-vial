@@ -7,8 +7,12 @@ import { fetchGz, decodeConnectome, decodeLabels } from '../engine/data.js';
 const SAT = (x, k) => 1 - Math.exp(-Math.max(0, x) / k);
 
 export class Brain {
-  constructor() {
+  constructor(opts = {}) {
+    this.dt = opts.dt || 0.1;
+    this.connSuffix = opts.connSuffix || '';   // '.shuf' loads the rewired control
     this.ready = false;
+    this.t = 0;          // biological ms; set from the first frame, must not start undefined
+    this.nActive = 0;
     this.hz = null;
     this.winCount = null;
     this.lastRead = 0;
@@ -22,10 +26,10 @@ export class Brain {
     const N = meta.n_neurons, E = meta.n_edges;
     onProgress?.('annotations', 0.10);
     this.labels = decodeLabels(await fetchGz('data/labels.bin.gz'), N);
-    const sign = await fetchGz('data/sign.bin.gz');
+    const sign = await fetchGz(`data/sign${this.connSuffix}.bin.gz`);
     this.channels = await (await fetch('data/channels.json')).json();
     onProgress?.('connections', 0.18);
-    const raw = await fetchGz('data/conn.bin.gz', f => onProgress?.('connections', 0.18 + f * 0.64));
+    const raw = await fetchGz(`data/conn${this.connSuffix}.bin.gz`, f => onProgress?.('connections', 0.18 + f * 0.64));
     onProgress?.('rebuild', 0.86);
     await new Promise(r => setTimeout(r, 0));
     const conn = decodeConnectome(raw, N, E, sign);
@@ -37,7 +41,7 @@ export class Brain {
 
     this.worker = new Worker('js/engine/sim.worker.js');
     this.worker.onmessage = e => this._msg(e.data);
-    this.worker.postMessage({ cmd: 'init', N, indptr: conn.indptr, indices: conn.indices, weights: conn.weights },
+    this.worker.postMessage({ cmd: 'init', N, dt: this.dt || 0.1, indptr: conn.indptr, indices: conn.indices, weights: conn.weights },
       [conn.indptr.buffer, conn.indices.buffer, conn.weights.buffer]);
     onProgress?.('renderer', 0.96);
   }
@@ -66,10 +70,14 @@ export class Brain {
     for (let i = 0; i < hz.length; i++) { hz[i] += ((wc[i] / dt) - hz[i]) * 0.5; wc[i] = 0; }
   }
 
-  /* drive a set of neurons; passing an empty list lets her fall quiet again */
-  stimulate(idx) {
+  /* Drive a set of neurons. `rates` (Hz, one per neuron) makes the drive graded,
+     which is how a receptor neuron encodes concentration — and keeps the active
+     set small, which is what the engine's throughput actually depends on. */
+  stimulate(idx, rates) {
     if (!this.ready) return;
-    this.worker.postMessage({ cmd: 'stim', idx: Int32Array.from(idx || []), reset: false });
+    const msg = { cmd: 'stim', idx: Int32Array.from(idx || []), reset: false };
+    if (rates) msg.rates = Float32Array.from(rates);
+    this.worker.postMessage(msg);
   }
 
   /* Evoked response: what the cue ADDED, not the absolute level.

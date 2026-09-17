@@ -7,22 +7,32 @@ const TMBR = 20.0, TAU = 5.0;                   // ms
 const TRFC = 2.2, TDLY = 1.8;                   // ms
 const WSYN = 0.275;                             // mV per synapse
 const RPOI = 150.0, FPOI = 250.0;               // Poisson drive
-const DT = 0.1;                                 // ms
+let DT = 0.1;                                   // ms; settable at init
+// 0.1 ms is far finer than the model needs: the fastest time constant is the 5 ms
+// synapse. Integration is closed-form, so a larger step only coarsens spike timing.
 
-const EV = Math.exp(-DT / TMBR);
-const EG = Math.exp(-DT / TAU);
-const KC = (TAU / (TAU - TMBR)) * (EG - EV);    // exact g -> v coupling
-const RFC_STEPS = Math.round(TRFC / DT);
-const DLY_STEPS = Math.round(TDLY / DT);
-const P_POI = RPOI * DT / 1000;
+let EV, EG, KC, RFC_STEPS, DLY_STEPS, P_POI;
+function derive() {
+  EV = Math.exp(-DT / TMBR);
+  EG = Math.exp(-DT / TAU);
+  KC = (TAU / (TAU - TMBR)) * (EG - EV);        // exact g -> v coupling
+  RFC_STEPS = Math.max(1, Math.round(TRFC / DT));
+  DLY_STEPS = Math.max(1, Math.round(TDLY / DT));
+  P_POI = RPOI * DT / 1000;
+}
+derive();
 const W_POI = WSYN * FPOI;
-const EPS_V = 0.02, EPS_G = 0.02;               // drop from active set below this
+let EPS_V = 0.02, EPS_G = 0.02;   // retire from the active set below this, in mV
+// The spike threshold sits 7 mV above rest, so 0.02 mV is 0.3% of it. Anything a
+// neuron is holding below this cannot influence the network before it decays, so
+// the cutoff is an accuracy/throughput dial rather than a hard correctness bound.
 
 let N = 0, indptr = null, indices = null, weights = null;
 let v, g, rfc, inActive, isStim, spikeCount;
 let active, nActive = 0;
 let ring, ringLen;
 let stimList = new Int32Array(0);
+let stimRate = null;      // per-neuron Poisson rate in Hz, or null for the default
 let step = 0, running = false, speed = 8;
 let outIdx, outCount = 0;
 let totalSpikes = 0;
@@ -61,9 +71,13 @@ function advance() {
   }
   r.n = 0;
 
-  // 2. Poisson drive on the stimulated set
+  // 2. Poisson drive on the stimulated set.
+  //    A graded rate is what a real sensory neuron does — odour concentration sets
+  //    firing rate — and it also keeps the active set small, which is what the
+  //    engine's speed actually depends on.
   for (let k = 0; k < stimList.length; k++) {
-    if (Math.random() < P_POI) { const i = stimList[k]; v[i] += W_POI; touch(i); }
+    const p = stimRate ? stimRate[k] * (DT / 1000) : P_POI;
+    if (p > 0 && Math.random() < p) { const i = stimList[k]; v[i] += W_POI; touch(i); }
   }
 
   // 3. integrate + threshold, active set only
@@ -98,6 +112,7 @@ self.onmessage = (ev) => {
   const m = ev.data;
 
   if (m.cmd === 'init') {
+    if (m.dt) { DT = m.dt; derive(); }
     N = m.N; indptr = m.indptr; indices = m.indices; weights = m.weights;
     v = new Float32Array(N); g = new Float32Array(N);
     rfc = new Int16Array(N); inActive = new Uint8Array(N); isStim = new Uint8Array(N);
@@ -115,6 +130,7 @@ self.onmessage = (ev) => {
     // or every interaction would restart her brain from scratch.
     isStim.fill(0);
     stimList = new Int32Array(m.idx || []);
+    stimRate = m.rates ? new Float32Array(m.rates) : null;
     for (let k = 0; k < stimList.length; k++) { isStim[stimList[k]] = 1; touch(stimList[k]); }
     if (m.reset) reset();
     return;
@@ -125,6 +141,7 @@ self.onmessage = (ev) => {
     return;
   }
   if (m.cmd === 'speed') { speed = m.value; return; }
+  if (m.cmd === 'eps') { EPS_V = m.v; EPS_G = m.v; return; }
   if (m.cmd === 'reset') { reset(); emit(); return; }
 };
 

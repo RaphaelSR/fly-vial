@@ -4,89 +4,97 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vial</title>
-<meta name="description" content="Keep a fruit fly alive for fifty days and teach her tricks. Her reactions run on the real FlyWire connectome.">
-<meta name="theme-color" content="#0B1114">
+<meta name="description" content="A fruit fly learns to find food in a maze, steered by her own connectome. Real FlyWire wiring, reinforcement learning on the readout.">
+<meta name="theme-color" content="#0A1013" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#E7EDEF" media="(prefers-color-scheme: light)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
 </head>
 <body>
 
+<canvas id="stage"></canvas>
+
 <div id="boot">
-  <div class="boot-inner">
-    <div class="jar" aria-hidden="true"><span></span><span></span><span></span></div>
-    <h1 data-i18n="app.title"></h1>
+  <div class="boot-card">
+    <div class="spark" aria-hidden="true"><i></i><i></i><i></i></div>
+    <h1>Vial</h1>
     <p class="sub" data-i18n="app.sub"></p>
-    <div class="load">
-      <div class="track"><div id="loadBar"></div></div>
-      <p id="loadLabel" class="mono"></p>
-      <p id="loadDetail" data-i18n="boot.detail"></p>
-    </div>
+    <div class="track"><div id="loadBar"></div></div>
+    <p id="loadLabel" class="mono"></p>
+    <p id="loadDetail" class="fine" data-i18n="boot.detail"></p>
   </div>
 </div>
 
-<header class="top">
-  <div class="brand">
-    <span class="mark" aria-hidden="true"></span>
-    <div><h1 data-i18n="app.title"></h1><p id="day" class="mono"></p></div>
+<header class="hud hud-tl">
+  <div class="title">
+    <span class="dot" aria-hidden="true"></span>
+    <div><h1>Vial</h1><p data-i18n="app.sub"></p></div>
   </div>
-  <select id="lang" class="lang" aria-label="Language"></select>
+  <div class="run mono">
+    <span><b id="mEpisode">0</b><i data-i18n="m.episode"></i></span>
+    <span><b id="mStep">0</b><i data-i18n="m.step"></i></span>
+    <span><b id="mFound">0</b><i data-i18n="m.found"></i></span>
+  </div>
 </header>
 
-<main>
-  <section class="stage">
-    <canvas id="vial"></canvas>
-    <div class="stage-top">
-      <span id="firing" class="mono chip-stat"></span>
-      <button class="info" data-info="brain" aria-label="info">i</button>
-    </div>
-    <p id="status" class="status"></p>
-    <div id="dead" class="dead">
-      <button id="btnNew" class="primary" data-i18n="state.newfly"></button>
+<div class="hud hud-tr">
+  <div id="theme" class="theme" role="group" aria-label="Theme">
+    <button data-theme-set="auto" title="auto" aria-label="auto"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.2"/><path d="M8 2.8v10.4" stroke-linecap="round"/><path d="M8 3.2a4.8 4.8 0 0 1 0 9.6z" fill="currentColor" stroke="none"/></svg></button>
+    <button data-theme-set="light" title="light" aria-label="light"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="3.1"/><path d="M8 1.2v1.7M8 13.1v1.7M1.2 8h1.7M13.1 8h1.7M3.2 3.2l1.2 1.2M11.6 11.6l1.2 1.2M12.8 3.2l-1.2 1.2M4.4 11.6l-1.2 1.2" stroke-linecap="round"/></svg></button>
+    <button data-theme-set="dark" title="dark" aria-label="dark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M13.2 9.6A5.6 5.6 0 0 1 6.4 2.8a5.6 5.6 0 1 0 6.8 6.8z" stroke-linejoin="round"/></svg></button>
+  </div>
+  <select id="lang" class="lang" aria-label="Language"></select>
+  <button class="info" data-info="what" aria-label="info">i</button>
+</div>
+
+<aside class="hud rail">
+  <section class="card">
+    <h2><span data-i18n="p.antennae"></span><button class="info" data-info="antennae">i</button></h2>
+    <div class="pair">
+      <label data-i18n="side.left"></label><span class="meter"><i id="barL"></i></span><b id="hzL" class="mono">0</b>
+      <label data-i18n="side.right"></label><span class="meter"><i id="barR"></i></span><b id="hzR" class="mono">0</b>
     </div>
   </section>
 
-  <aside class="panel">
-    <section class="block">
-      <h2><span data-i18n="needs.title"></span><button class="info" data-info="life" aria-label="info">i</button></h2>
-      <div class="needs">
-        <label data-i18n="need.hunger"></label><span class="meter"><i id="bar-hunger"></i></span>
-        <label data-i18n="need.thirst"></label><span class="meter"><i id="bar-thirst"></i></span>
-        <label data-i18n="need.dirt"></label><span class="meter"><i id="bar-dirt"></i></span>
-        <label data-i18n="need.energy"></label><span class="meter"><i id="bar-energy"></i></span>
-      </div>
-      <h2 class="mt" data-i18n="care.title"></h2>
-      <div class="care">
-        <button id="care-feed" class="act" data-i18n="care.feed"></button>
-        <button id="care-water" class="act" data-i18n="care.water"></button>
-        <button id="care-clean" class="act" data-i18n="care.clean"></button>
-        <button id="care-light" class="act ghost"></button>
-      </div>
-    </section>
+  <section class="card">
+    <h2><span data-i18n="p.steering"></span><button class="info" data-info="steering">i</button></h2>
+    <div class="steer">
+      <span class="s-half"><i id="dnL"></i></span>
+      <span class="s-mid"></span>
+      <span class="s-half r"><i id="dnR"></i></span>
+    </div>
+    <p class="cap mono"><span id="dnLv">0</span> Hz &nbsp;DNa02&nbsp; <span id="dnRv">0</span> Hz</p>
+    <div id="feats" class="feats"></div>
+  </section>
 
-    <section class="block grow">
-      <h2><span data-i18n="train.title"></span><button class="info" data-info="train" aria-label="info">i</button>
-        <span id="trials" class="mono dim"></span></h2>
-      <p class="tiny" data-i18n="train.hint"></p>
+  <section class="card grow">
+    <h2><span data-i18n="p.learning"></span><button class="info" data-info="learning">i</button></h2>
+    <canvas id="curve" class="curve"></canvas>
+    <div class="legend2 mono">
+      <span><i class="k-real"></i><span data-i18n="leg.real"></span></span>
+      <span><i class="k-shuf"></i><span data-i18n="leg.shuf"></span></span>
+    </div>
+    <p id="learnStat" class="cap"></p>
+  </section>
+</aside>
 
-      <p class="lab" data-i18n="train.cue"></p>
-      <div id="cues" class="chips"></div>
-
-      <p class="lab" data-i18n="train.want"></p>
-      <div id="wants" class="chips"></div>
-
-      <button id="btnPresent" class="primary wide" data-i18n="train.present"></button>
-      <p id="trialMsg" class="trial"></p>
-      <div id="judge" class="judge">
-        <button id="btnReward" class="reward" data-i18n="train.reward"></button>
-        <button id="btnSkip" class="ghost" data-i18n="train.skip"></button>
-      </div>
-      <p id="conf" class="tiny dim"></p>
-      <button id="btnForget" class="link" data-i18n="train.forget"></button>
-    </section>
-  </aside>
-</main>
+<footer class="hud dock">
+  <button id="btnRun" class="primary"></button>
+  <button id="btnTrain" class="ghost" data-i18n="c.train"></button>
+  <button id="btnMaze" class="ghost" data-i18n="c.maze"></button>
+  <label class="seg"><span data-i18n="c.brain"></span>
+    <button id="modeReal" class="on" data-i18n="c.real"></button><button id="modeShuf" data-i18n="c.shuf"></button>
+  </label>
+  <span id="dockStat" class="mono dim"></span>
+</footer>
 
 <div id="infoPop" role="dialog"><h4></h4><p></p></div>
 
