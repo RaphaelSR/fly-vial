@@ -1,6 +1,17 @@
 /* Three locales for Vial. Flat keys; {x} placeholders filled by t(). */
 
 const EN = {
+  "p.brain": "Her brain, live",
+  "m.active": "{n} firing",
+  "nt.acetylcholine": "acetylcholine — excites",
+  "nt.gaba": "GABA — inhibits",
+  "nt.glutamate": "glutamate — inhibits",
+  "nt.dopamine": "dopamine",
+  "nt.serotonin": "serotonin",
+  "nt.octopamine": "octopamine",
+  "nt.unknown": "not determined",
+  "info.brain.t": "The neurons you are watching",
+  "info.brain.b": "Every dot is one of the 18,267 neurons in the simulation, at its real coordinate in the fly's head — this is anatomy, not a diagram. Colour is the transmitter each cell releases: amber excites, blue and violet inhibit. Dim points are resting and draw the shape of the circuit; a point that just fired burns toward white. Watch the odour receptors flare at the front on every sniff, and the wave travel back to the command neurons.",
   "app.sub": "A fruit fly finds food using her own connectome",
   "boot.detail": "Her brain is the real FlyWire wiring — 18,267 neurons on the path from odour to command. 1 MB, cached after the first visit.",
   "boot.annotations": "Reading cell types",
@@ -42,6 +53,17 @@ const EN = {
 };
 
 const PT = {
+  "p.brain": "O cérebro dela, ao vivo",
+  "m.active": "{n} disparando",
+  "nt.acetylcholine": "acetilcolina — excita",
+  "nt.gaba": "GABA — inibe",
+  "nt.glutamate": "glutamato — inibe",
+  "nt.dopamine": "dopamina",
+  "nt.serotonin": "serotonina",
+  "nt.octopamine": "octopamina",
+  "nt.unknown": "não determinado",
+  "info.brain.t": "Os neurônios que você está vendo",
+  "info.brain.b": "Cada ponto é um dos 18.267 neurônios da simulação, na coordenada real dele dentro da cabeça da mosca — isso é anatomia, não diagrama. A cor é o transmissor que cada célula libera: âmbar excita, azul e violeta inibem. Pontos fracos estão em repouso e desenham a forma do circuito; um ponto que acabou de disparar queima para o branco. Repare nos receptores de odor acendendo na frente a cada fungada, e a onda viajando até os neurônios de comando.",
   "app.sub": "Uma mosca acha comida usando o próprio connectome",
   "boot.detail": "O cérebro dela é a fiação real do FlyWire — 18.267 neurônios no caminho do odor até o comando. 1 MB, em cache depois da primeira visita.",
   "boot.annotations": "Lendo tipos celulares",
@@ -83,6 +105,17 @@ const PT = {
 };
 
 const ES = {
+  "p.brain": "Su cerebro, en vivo",
+  "m.active": "{n} disparando",
+  "nt.acetylcholine": "acetilcolina — excita",
+  "nt.gaba": "GABA — inhibe",
+  "nt.glutamate": "glutamato — inhibe",
+  "nt.dopamine": "dopamina",
+  "nt.serotonin": "serotonina",
+  "nt.octopamine": "octopamina",
+  "nt.unknown": "no determinado",
+  "info.brain.t": "Las neuronas que estás viendo",
+  "info.brain.b": "Cada punto es una de las 18.267 neuronas de la simulación, en su coordenada real dentro de la cabeza de la mosca — esto es anatomía, no un diagrama. El color es el transmisor que libera cada célula: ámbar excita, azul y violeta inhiben. Los puntos tenues están en reposo y dibujan la forma del circuito; uno que acaba de disparar arde hacia el blanco. Fíjate en los receptores de olor encendiéndose al frente en cada olfateo, y la onda viajando hasta las neuronas de comando.",
   "app.sub": "Una mosca encuentra comida usando su propio conectoma",
   "boot.detail": "Su cerebro es el cableado real de FlyWire — 18.267 neuronas en el camino del olor al comando. 1 MB, en caché tras la primera visita.",
   "boot.annotations": "Leyendo tipos celulares",

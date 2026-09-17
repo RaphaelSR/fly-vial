@@ -2,6 +2,7 @@ import { Brain } from './game/brain.js';
 import { Maze } from './maze/maze.js';
 import { Senses, Policy, Body, ACTIONS } from './maze/agent.js';
 import { Arena, PALETTES } from './maze/scene.js';
+import { BrainView } from './maze/brainview.js';
 import { LOCALES, detectLocale, setLocale, getLocale, t, applyDom } from './i18n.js';
 
 const $ = s => document.querySelector(s);
@@ -39,6 +40,7 @@ function applyTheme(pref) {
     b.classList.toggle('on', b.dataset.themeSet === pref));
   const want = resolveTheme(pref);
   if (S.arena && S.themeNow !== want) rebuildScene(want);
+  if (S.brainView) S.brainView.setTheme(want);
   S.themeNow = want;
 }
 function setTheme(pref) {
@@ -68,6 +70,9 @@ async function boot() {
     await loadBrain(step);
     S.themeNow = resolveTheme();
     S.arena = new Arena($('#stage'), S.themeNow);
+    step('renderer', 0.98);
+    S.brainView = new BrainView($('#brain'), S.brain, S.themeNow);
+    await S.brainView.load();
     newMaze(1 + ((Math.random() * 9999) | 0));
     restore();
     buildUI();
@@ -104,6 +109,7 @@ function newMaze(seed) {
   if (!S.pol) S.pol = new Policy(S.brain.featIdx.length);
   S.arena.build(S.maze);
   buildFeatStrip();
+  buildNTKey();
   resetEpisode();
 }
 
@@ -166,6 +172,7 @@ function loop(now) {
   if (!S.training) {
     S.arena.update(S.body, dt, now / 1000);
     S.arena.render();
+    if (S.brainView) { S.brainView.update(dt); S.brainView.render(); }
   }
   if (now - (S._paint || 0) > 180) { paint(); S._paint = now; }
   requestAnimationFrame(loop);
@@ -177,6 +184,16 @@ function buildLang() {
   sel.innerHTML = Object.keys(LOCALES).map(c => `<option value="${c}">${LOCALES[c]['lang.name']}</option>`).join('');
   sel.value = getLocale();
   sel.addEventListener('change', () => { setLocale(sel.value); applyDom(); repaint(); });
+}
+
+function buildNTKey() {
+  const box = $('#ntKey'); if (!box) return;
+  const seen = new Set(S.brain.meta.dicts.top_nt);
+  const order = ['acetylcholine', 'gaba', 'glutamate', 'dopamine', 'serotonin', 'octopamine'];
+  const cols = { acetylcholine: '245,174,66', gaba: '71,148,224', glutamate: '163,115,222',
+                 dopamine: '89,199,140', serotonin: '230,115,166', octopamine: '77,199,204' };
+  box.innerHTML = order.filter(n => seen.has(n))
+    .map(n => `<span><i style="background:rgb(${cols[n]})"></i>${esc(t('nt.' + n))}</span>`).join('');
 }
 
 function buildFeatStrip() {
@@ -266,12 +283,16 @@ function paint() {
   $('#mEpisode').textContent = S.pol.episodes;
   $('#mStep').textContent = S.ep.stepCount || 0;
   $('#mFound').textContent = S.ep.found;
+  let firing = 0;
+  const hz = S.brain.hz;
+  for (let i = 0; i < hz.length; i++) if (hz[i] > 1) firing++;
+  $('#mActive').textContent = t('m.active', { n: firing.toLocaleString(getLocale()) });
   drawCurve();
 }
 
 function repaint() {
   $('#btnRun').textContent = t(S.running ? 'c.pause' : 'c.watch');
-  applyDom(); paintInfo(); drawCurve();
+  applyDom(); paintInfo(); drawCurve(); buildNTKey();
   const c = S.curves[S.mode];
   $('#learnStat').textContent = c.length < 3 ? t('learn.none')
     : t('learn.rate', { p: Math.round(100 * c.slice(-20).reduce((a, e) => a + e.found, 0) / Math.min(20, c.length)) });
