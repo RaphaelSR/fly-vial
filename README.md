@@ -73,6 +73,33 @@ that to **0.007**, and cue-conditional learning appeared immediately.
 
 ---
 
+## Status: parked
+
+This is finished as far as it goes and it works, but I stopped developing it.
+
+I then tried rebuilding it as a maze-foraging simulation — the fly hunting a drop
+of syrup by smell, with reinforcement learning on her descending readout. That
+attempt lives on the [`maze-experiment`](../../tree/maze-experiment) branch and is
+**not finished**. It renders, she walks with a real tripod gait, and the sniffing
+mechanism below does work, but the learning never convincingly beat chance and I
+did not take it further.
+
+What that attempt found, which is the part worth keeping:
+
+- **Sustained stimulation destroys the signal.** Drive the odour receptors
+  continuously and within ~80 ms the network saturates — 18,110 of 18,267 neurons
+  active — and the descending readout stops reflecting the input. Two opposite
+  odour patterns measured at **cosine 0.9995**, and the readout was flat from 1 Hz
+  to 60 Hz. One bit of information, which is not enough to navigate anything.
+- **Brief pulses keep it.** A 20 ms pulse read 40 ms after onset, against the
+  pattern from just before it, measures **cosine 0.29**. So the side information is
+  there; sustained drive is what erases it.
+- The olfactory→descending subcircuit is 18,267 neurons and 395,931 edges, 0.99 MB
+  packed — about an eighth of the full brain, built by `tools/` in fly-brain-lab.
+
+The measurement scripts are on that branch. If anyone picks this up, start there
+rather than repeating it.
+
 ## Honest limits
 
 - The brain has **no plasticity**. Nothing you do changes a synapse. Only the
